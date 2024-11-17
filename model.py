@@ -1,15 +1,19 @@
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from tensorflow.keras import layers, models # type: ignore
 import librosa as lr
 from pathlib import Path
 import matplotlib.pyplot as plt
 from tensorflow.keras.models import load_model
+from sklearn.decomposition import PCA
 
 
-def extract_features(audio_path):
+    
+    
+
+   
+def extract_features(audio_path, split=False):
     audio_data, sample_rate = lr.load(audio_path, sr=16000)  # Resample to 16 kHz
     audio_data, _ = lr.effects.trim(audio_data, top_db=20)
 
@@ -29,7 +33,7 @@ def extract_features(audio_path):
         lr.feature.spectral_flatness(y=audio_data, hop_length=hop_length),  # spectral_flatness
         lr.feature.mfcc(y=audio_data, sr=sample_rate, hop_length=hop_length, n_mfcc=13),  # mfcc
         lr.feature.chroma_stft(y=audio_data, sr=sample_rate, hop_length=hop_length, n_chroma=12),  # chroma_stft
-        lr.feature.tonnetz(y=lr.effects.harmonic(audio_data), sr=sample_rate),  # tonnetz
+        lr.feature.tonnetz(y=lr.effects.harmonic(audio_data), sr=sample_rate)  # tonnetz
     ]
 
     # Calculate the mean value for each feature across time (over all frames)
@@ -49,7 +53,6 @@ def extract_features(audio_path):
 
 def normalize_features(data):
     if data.ndim==1:
-        x = pd.read_csv("data.csv").to_numpy()
         range_features = np.max(x, axis=0) - np.min(x, axis=0)
         return data/range_features
     range_features = np.max(data, axis=0) - np.min(data, axis=0)
@@ -57,7 +60,6 @@ def normalize_features(data):
 
 def standardize_features(data):
     if data.ndim==1:
-        x = pd.read_csv("data.csv").to_numpy()
         mean_features = np.mean(x, axis=0)
         std_features = np.std(x, axis=0)
         return(data-mean_features)/std_features
@@ -117,15 +119,19 @@ def load_data(type='emotion'):
     print(f"Labels shape: {labels.shape}")
     return data, labels
 
-num_emotions = 3
+num_emotions=3
+x = pd.read_csv("data.csv").to_numpy()
+y = pd.read_csv('labels.csv').to_numpy()
 def train():
-    x = pd.read_csv("data.csv").to_numpy()
-    y = pd.read_csv('labels.csv').to_numpy()
-
     x_norm = normalize_features(x)
+    pca = PCA(0.95)
+    pca.fit(x_norm)
+    mean = pca.mean_
+    components = pca.components_
+    x_pca = pca.fit_transform(x_norm)
 
     model = models.Sequential([
-        layers.Input(shape=(x_norm.shape[1],)),  # Input: num_features
+        layers.Input(shape=(x_pca.shape[1],)),  # Input: num_features
         layers.BatchNormalization(),
         layers.Dense(128, activation='relu'),
         layers.BatchNormalization(),
@@ -139,7 +145,7 @@ def train():
                 loss='categorical_crossentropy',
                 metrics=['accuracy'])
 
-    history = model.fit(x_norm, y, epochs=44, batch_size=32, validation_split=0.2)
+    history = model.fit(x_pca, y, epochs=44, batch_size=32, validation_split=0.2)
 
     model.summary()
 
@@ -152,12 +158,18 @@ def train():
     plt.legend()
     plt.show()
 
-def predict(audio):
-    new_x = extract_features(audio)
+def predict(audio, split=False):
+    new_x = extract_features(audio, split)
     norm_x = normalize_features(new_x)
+    pca = PCA(n_components=2)
+    pca.fit(norm_x)
+    mean = pca.mean_
+    components = pca.components_
+    x_cent = norm_x - mean
+    x_pca = np.dot(x_cent, components.T)
     model = load_model('cat_emotion_model_first_try.keras')
-    predictions = model.predict(np.array([norm_x]))  # new_X: feature array of a new sample
+    predictions = model.predict(np.array([x_pca]))  # new_X: feature array of a new sample
     predicted_class = predictions.argmax(axis=1)
     print(predicted_class)
     return [emotion_classes[idx] for idx in predicted_class]
-print(predict('meow.wav'))
+
