@@ -1,6 +1,10 @@
 import numpy as np
 import pandas as pd
+import tensorflow as tf
+from tensorflow.keras import layers, models
 import librosa as lr
+def load_data():
+    pass
 
 def extract_features(audio_path):
     audio_data, sample_rate = lr.load(audio_path, sr=None)
