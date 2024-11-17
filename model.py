@@ -76,18 +76,34 @@ data_folder = Path("dataset/")
 nrows = 440
 ncols = 37
 def load_data(type='emotion'):
-    data = np.empty(shape=(nrows, ncols))
-    y = np.empty(shape=(nrows, num_emotions))
-    count = 0
+    x = []  # Use a list to dynamically store features
+    y = []  # Use a list to store corresponding labels
+
     for file in data_folder.iterdir():
         if not file.is_file() or file.suffix != '.wav': 
             continue
-        filename = file.name
-        data[count] = extract_features(filename)
-        y[count] = get_y(filename, type)
-        count+=1
-    pd.DataFrame(data).to_csv('data.csv')
-    pd.DataFrame(y).to_csv('labels.csv')
+        try:
+            # Extract features and label
+            features = extract_features(str(file))
+            label = get_y(file.name, type)
+            # Append to lists
+            x.append(features)
+            y.append(label)
+        except Exception as e:
+            print(f"Error processing file {file}: {e}")
+            continue
+
+    # Convert lists to arrays
+    data = np.array(x)
+    labels = np.array(y)
+
+    # Save to CSV
+    pd.DataFrame(data).to_csv('data.csv', index=False)
+    pd.DataFrame(labels).to_csv('labels.csv', index=False)
+
+    print(f"Data shape: {data.shape}")
+    print(f"Labels shape: {labels.shape}")
+    return data, labels
 
 num_emotions = 3
 load_data()
