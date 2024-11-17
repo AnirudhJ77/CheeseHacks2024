@@ -45,3 +45,20 @@ def extract_features(audio_path):
     print("Final Feature Array:", final_features)
 
 print(extract_features("meow.wav"))
+
+def normalize_features(data):
+    """
+    Takes in a dataset and normalizes each feature.
+    Parameters:
+    data (np.array) : Dataset of Features
+    Returns:
+    (np.array) : Dataset of normalized features
+    """
+def encode_labels(y_train, y_test=None):
+    """
+    Encodes the output labels
+    """
+def test_train_split(data):
+    """
+    Splits the data into test and train data
+    """
