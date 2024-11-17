@@ -1,7 +1,6 @@
 import os
 from flask import Flask, request, render_template, jsonify
 from werkzeug.utils import secure_filename
-from pydub import AudioSegment
 from pathlib import Path
 import model
 

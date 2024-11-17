@@ -124,14 +124,9 @@ x = pd.read_csv("data.csv").to_numpy()
 y = pd.read_csv('labels.csv').to_numpy()
 def train():
     x_norm = normalize_features(x)
-    pca = PCA(0.95)
-    pca.fit(x_norm)
-    mean = pca.mean_
-    components = pca.components_
-    x_pca = pca.fit_transform(x_norm)
 
     model = models.Sequential([
-        layers.Input(shape=(x_pca.shape[1],)),  # Input: num_features
+        layers.Input(shape=(x_norm.shape[1],)),  # Input: num_features
         layers.BatchNormalization(),
         layers.Dense(128, activation='relu'),
         layers.BatchNormalization(),
@@ -161,14 +156,8 @@ def train():
 def predict(audio, split=False):
     new_x = extract_features(audio, split)
     norm_x = normalize_features(new_x)
-    pca = PCA(n_components=2)
-    pca.fit(norm_x)
-    mean = pca.mean_
-    components = pca.components_
-    x_cent = norm_x - mean
-    x_pca = np.dot(x_cent, components.T)
     model = load_model('cat_emotion_model_first_try.keras')
-    predictions = model.predict(np.array([x_pca]))  # new_X: feature array of a new sample
+    predictions = model.predict(np.array([norm_x]))  # new_X: feature array of a new sample
     predicted_class = predictions.argmax(axis=1)
     print(predicted_class)
     return [emotion_classes[idx] for idx in predicted_class]
