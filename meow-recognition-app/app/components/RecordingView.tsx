@@ -11,7 +11,7 @@ export default function RecordingView() {
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const [file, setFile] = useState<Blob | null>(null);
     const [hasResult, setHasResult] = useState<boolean>(false);
-    const [description, setDescription] = useState<string>("Your cat is hungry");
+    const [description, setDescription] = useState<string>("cat is hungry");
 
 
     //#region Audio Recording Logic
@@ -88,12 +88,12 @@ export default function RecordingView() {
                     if (response.ok) {
                         const result = await response.json();
                         console.log("Analysis result:", result);
-                        setDescription(result.analysis); // Update your UI with Flask response
+                        setDescription(result.emotion); // Update your UI with Flask response
                     } else {
                         console.error("Failed to upload WAV file");
                     }
                 } catch (error) {
-                    console.error("Error uploading WAV file:", error);
+                    //console.error("Error uploading WAV file:", error);
                 }
 
                 const url = URL.createObjectURL(wavBlob);
@@ -188,7 +188,7 @@ export default function RecordingView() {
 
                 <div className="flex items-center justify-center">
                     <div className={`transition-opacity duration-1000 ${hasResult ? "opacity-100" : "opacity-0"} 
-                    bg-opacity-20 w-full md:w-[800px] h-20 p-4 text-balance text-center text-3xl font-mono font-bold text-amber-800`}>
+                    bg-opacity-20 w-full md:w-[800px] pt-2.5 text-balance text-center text-3xl font-mono font-bold text-amber-800`}>
                         <p className=" bg-opacity-20 w-full md:w-[800px] h-20 p-4 text-balance text-center text-3xl font-mono font-bold text-amber-800 opacity-50">
                             {description}
                         </p>
