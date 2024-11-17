@@ -4,8 +4,7 @@ from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from tensorflow.keras import layers, models
 import librosa as lr
-def load_data():
-    pass
+from pathlib import Path
 
 def extract_features(audio_path):
     audio_data, sample_rate = lr.load(audio_path, sr=None)
@@ -45,7 +44,6 @@ def extract_features(audio_path):
     print("Final Feature Array Shape:", final_features.shape)
     print("Final Feature Array:", final_features)
 
-print(extract_features("meow.wav"))
 
 def normalize_features(data):
     """
@@ -65,15 +63,43 @@ def standardize_features(data):
     Returns:
     (np.array) : Dataset of normalized features
     """
-def encode_labels(y_train, y_test=None):
+emotion_classes = {
+    0 : "Satisfied",
+    1 : "Hungry",
+    2 : "Anxious"
+}
+def get_y(filename, type='emotion'):
     """
-    Encodes the output labels
+    Encodes the output labels using one-hot encoding
     """
-def test_train_split(data):
-    """
-    Splits the data into test and train data
-    """
+    if type=='emotion' :
+        y = filename[0]
+        if y == 'B':
+            return np.array([1, 0, 0])
+        elif y == 'F':
+            return np.array([0, 1, 0])
+        elif y=='I':
+            return np.array([0, 0, 1])
+    return None
 
+data_folder = Path("./dataset/")
+nrows = 440
+ncols = 37
+def load_data(type='emotion'):
+    data = np.empty(shape=(nrows, ncols))
+    y = np.empty(shape=(nrows, num_emotions))
+    count = 0
+    for file in data_folder.iterdir():
+        if not file.is_file() or file.suffix != '.wav': 
+            continue
+        filename = file.name
+        data[count] = extract_features(filename)
+        y[count] = get_y(filename, type)
+        count+=1
+    pd.DataFrame(data).to_csv('data.csv')
+    pd.DataFrame(y).to_csv('labels.csv')
+
+num_emotions = 3
 model = models.Sequential([
     layers.Input(shape=(X_train.shape[1],)),  # Input: num_features
     layers.BatchNormalization(),
@@ -82,7 +108,7 @@ model = models.Sequential([
     layers.Dropout(0.3),
     layers.Dense(64, activation='relu', kernel_regularizer='l2'),
     layers.Dropout(0.2),
-    layers.Dense(num_classes, activation='softmax')  # Output: num_classes
+    layers.Dense(num_emotions, activation='softmax')  # Output: num_emotions
 ])
 
 model.compile(optimizer='adam',
@@ -90,3 +116,6 @@ model.compile(optimizer='adam',
               metrics=['accuracy'])
 
 model.summary()
+
+def predict(audio):
+    pass
