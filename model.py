@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
-from tensorflow.keras import layers, models
+from tensorflow.keras import layers, models # type: ignore
 import librosa as lr
 from pathlib import Path
 
@@ -15,37 +15,32 @@ def extract_features(audio_path):
     hop_length = int(frame_length * 0.5)  # 50% overlap
 
     # Extract features with lr
-    features = {
-        "zero_crossing_rate": lr.feature.zero_crossing_rate(y=audio_data, frame_length=frame_length, hop_length=hop_length)[0],
-        "rms": lr.feature.rms(y=audio_data, frame_length=frame_length, hop_length=hop_length)[0],
-        "spectral_centroid": lr.feature.spectral_centroid(y=audio_data, sr=sample_rate, hop_length=hop_length)[0],
-        "spectral_bandwidth": lr.feature.spectral_bandwidth(y=audio_data, sr=sample_rate, hop_length=hop_length)[0],
-        "spectral_rolloff": lr.feature.spectral_rolloff(y=audio_data, sr=sample_rate, hop_length=hop_length)[0],
-        "spectral_flatness": lr.feature.spectral_flatness(y=audio_data, hop_length=hop_length)[0],
-        "mfcc": lr.feature.mfcc(y=audio_data, sr=sample_rate, hop_length=hop_length, n_mfcc=13),
-        "chroma_stft": lr.feature.chroma_stft(y=audio_data, sr=sample_rate, hop_length=hop_length),
-        "tonnetz": lr.feature.tonnetz(y=lr.effects.harmonic(audio_data), sr=sample_rate),
-    }
+    features = [
+        lr.feature.zero_crossing_rate(y=audio_data, frame_length=frame_length, hop_length=hop_length), #zero_crossing_rate
+        lr.feature.rms(y=audio_data, frame_length=frame_length, hop_length=hop_length), #rms
+        lr.feature.spectral_centroid(y=audio_data, sr=sample_rate, hop_length=hop_length), #spectral_centroid
+        lr.feature.spectral_bandwidth(y=audio_data, sr=sample_rate, hop_length=hop_length), #spectral_bandwidth
+        lr.feature.spectral_rolloff(y=audio_data, sr=sample_rate, hop_length=hop_length),#spectral_rolloff
+        lr.feature.spectral_flatness(y=audio_data, hop_length=hop_length), #spectral_flatness
+        lr.feature.mfcc(y=audio_data, sr=sample_rate, hop_length=hop_length, n_mfcc=13),#mfcc
+        lr.feature.chroma_stft(y=audio_data, sr=sample_rate, hop_length=hop_length),#chroma_stft
+        lr.feature.tonnetz(y=lr.effects.harmonic(audio_data), sr=sample_rate)#tonnetz
+    ]
 
     # Calculate the mean value for each feature across time (over all frames)
-    mean_features = {}
+    mean_features = []
 
-    for key, feature_array in features.items():
+    for feature_array in features:
         if feature_array.ndim == 1:
             # For 1D features (e.g., zero-crossing rate, rms), calculate mean over the frames
-            mean_features[key] = np.mean(feature_array)
+            mean_features.append(np.mean(feature_array))
         else:
             # For 2D features (e.g., MFCC, chroma), calculate the mean over the frames (axis=1)
-            mean_features[key] = np.mean(feature_array, axis=1)
+            mean_features.extend(np.mean(feature_array, axis=1))
 
     # Flatten all the mean features into a single 1D array
-    final_features = np.array(list(mean_features.values()))
-
-    print("Final Feature Array Shape:", final_features.shape)
-    print("Final Feature Array:", final_features)
+    final_features = np.array(mean_features)
     return final_features
-
-print(extract_features("meow.wav"))
 
 def normalize_features(data):
     range_features = np.max(a=data, axis=1) - np.min(a=data, axis=1)
@@ -77,7 +72,7 @@ def get_y(filename, type='emotion'):
             return np.array([0, 0, 1])
     return None
 
-data_folder = Path("./dataset/")
+data_folder = Path("dataset/")
 nrows = 440
 ncols = 37
 def load_data(type='emotion'):
@@ -95,22 +90,23 @@ def load_data(type='emotion'):
     pd.DataFrame(y).to_csv('labels.csv')
 
 num_emotions = 3
-model = models.Sequential([
-    layers.Input(shape=(X_train.shape[1],)),  # Input: num_features
-    layers.BatchNormalization(),
-    layers.Dense(128, activation='relu'),
-    layers.BatchNormalization(),
-    layers.Dropout(0.3),
-    layers.Dense(64, activation='relu', kernel_regularizer='l2'),
-    layers.Dropout(0.2),
-    layers.Dense(num_emotions, activation='softmax')  # Output: num_emotions
-])
+load_data()
+# model = models.Sequential([
+#     layers.Input(shape=(X_train.shape[1],)),  # Input: num_features
+#     layers.BatchNormalization(),
+#     layers.Dense(128, activation='relu'),
+#     layers.BatchNormalization(),
+#     layers.Dropout(0.3),
+#     layers.Dense(64, activation='relu', kernel_regularizer='l2'),
+#     layers.Dropout(0.2),
+#     layers.Dense(num_emotions, activation='softmax')  # Output: num_emotions
+# ])
 
-model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
+# model.compile(optimizer='adam',
+#               loss='categorical_crossentropy',
+#               metrics=['accuracy'])
 
-model.summary()
+# model.summary()
 
-def predict(audio):
-    pass
+# def predict(audio):
+#     pass
