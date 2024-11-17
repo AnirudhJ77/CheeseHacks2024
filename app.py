@@ -2,6 +2,8 @@ import os
 from flask import Flask, request, render_template, jsonify
 from werkzeug.utils import secure_filename
 from pydub import AudioSegment
+from pathlib import Path
+import model
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -31,13 +33,21 @@ def convert_to_wav(input_file, output_file):
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
-        if 'file' in request.files:
-            return handle_external_upload(request.files['file'])
-        elif 'audio_data' in request.files:
-            return handle_internal_upload(request.files['audio_data'])
-        else:
-            return jsonify({"status": "error", "message": "Invalid upload request."}), 400
-    return render_template('upload.html')
+        if "wavFile" not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
+
+        # Save the uploaded file (optional)
+        uploaded_file = request.files["wavFile"]
+        file_path = Path(f"./uploads/{uploaded_file.filename}")
+        uploaded_file.save(file_path)
+
+        # Process the WAV file
+        # (Placeholder logic - replace with your actual audio processing code)
+        cat = model.predict(file_path)[0]
+        analysis_result = {"emotion": cat}
+
+        # Return the analysis result as JSON
+        return jsonify(analysis_result)
 
 def handle_external_upload(uploaded_file):
     """Handle external file uploads."""
@@ -71,4 +81,4 @@ def handle_internal_upload(file):
     return jsonify({"status": "success", "message": "Recorded audio saved as WAV!"}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
