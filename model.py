@@ -39,30 +39,53 @@ def extract_features(audio_path):
             mean_features[key] = np.mean(feature_array, axis=1)
 
     # Flatten all the mean features into a single 1D array
-    final_features = np.hstack(list(mean_features.values()))
+    final_features = np.array(list(mean_features.values()))
 
     print("Final Feature Array Shape:", final_features.shape)
     print("Final Feature Array:", final_features)
+    return final_features
 
+print(extract_features("meow.wav"))
 
 def normalize_features(data):
-    """
-    Takes in a dataset and normalizes each feature to be between 0 and 1.
-    x_norm = x/(max(x)-min(x))
-    Parameters:
-    data (np.array) : Dataset of Features
-    Returns:
-    (np.array) : Dataset of normalized features
-    """
+    cols = len(data[0])
+
+    data_norm = []
+
+    for col in range(cols):
+        feature = [row[col] for row in data]
+
+        feature_norm = []
+
+        range = max(feature)-min(feature)
+
+        for val in feature:
+            feature_norm.append(val/range)
+
+        data_norm.append(feature_norm)
+    
+    return np.array(data_norm)
+
 def standardize_features(data):
-    """
-    Takes in a dataset and normalizes each feature to have mean 0 and variance 1
-    x_norm = (x-mean(x))/sd(x)
-    Parameters:
-    data (np.array) : Dataset of Features
-    Returns:
-    (np.array) : Dataset of normalized features
-    """
+    cols = len(data[0])
+
+    data_std = []
+
+    for col in range(cols):
+        feature = [row[col] for row in data]
+
+        feature_std = []
+
+        mean = np.mean(feature)
+        stddev = np.std(feature)
+
+        for val in feature:
+            feature_std.append((val-mean)/stddev)
+
+        data_std.append(feature_std)
+    
+    return np.array(data_std)
+
 emotion_classes = {
     0 : "Satisfied",
     1 : "Hungry",
