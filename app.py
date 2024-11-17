@@ -3,9 +3,11 @@ from flask import Flask, request, render_template, jsonify
 from werkzeug.utils import secure_filename
 from pathlib import Path
 import model
+from flask_cors import CORS, cross_origin
 
 # Initialize Flask app
 app = Flask(__name__)
+CORS(app)
 
 # Configure upload folder and allowed extensions
 UPLOAD_FOLDER = 'uploads'
