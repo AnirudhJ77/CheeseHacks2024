@@ -48,43 +48,15 @@ def extract_features(audio_path):
 print(extract_features("meow.wav"))
 
 def normalize_features(data):
-    cols = len(data[0])
-
-    data_norm = []
-
-    for col in range(cols):
-        feature = [row[col] for row in data]
-
-        feature_norm = []
-
-        range = max(feature)-min(feature)
-
-        for val in feature:
-            feature_norm.append(val/range)
-
-        data_norm.append(feature_norm)
-    
-    return np.array(data_norm)
+    range_features = np.max(a=data, axis=1) - np.min(a=data, axis=1)
+    norm_data = data/range_features
+    return norm_data
 
 def standardize_features(data):
-    cols = len(data[0])
-
-    data_std = []
-
-    for col in range(cols):
-        feature = [row[col] for row in data]
-
-        feature_std = []
-
-        mean = np.mean(feature)
-        stddev = np.std(feature)
-
-        for val in feature:
-            feature_std.append((val-mean)/stddev)
-
-        data_std.append(feature_std)
-    
-    return np.array(data_std)
+    mean_features = np.mean(a=data, axis=1)
+    std_features = np.std(a=data, axis=1)
+    std_data = (data-mean_features)/std_features
+    return std_data
 
 emotion_classes = {
     0 : "Satisfied",
