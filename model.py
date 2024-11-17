@@ -19,15 +19,16 @@ def extract_features(audio_path):
 
     # Extract features with lr, ensuring fmax is within Nyquist frequency
     fmax = sample_rate / 2
+    n_fft = 256
     features = [
         lr.feature.zero_crossing_rate(y=audio_data, frame_length=frame_length, hop_length=hop_length),  # zero_crossing_rate
         lr.feature.rms(y=audio_data, frame_length=frame_length, hop_length=hop_length),  # rms
-        lr.feature.spectral_centroid(y=audio_data, sr=sample_rate, hop_length=hop_length),  # spectral_centroid
-        lr.feature.spectral_bandwidth(y=audio_data, sr=sample_rate, hop_length=hop_length),  # spectral_bandwidth
-        lr.feature.spectral_rolloff(y=audio_data, sr=sample_rate, hop_length=hop_length),  # spectral_rolloff
-        lr.feature.spectral_flatness(y=audio_data, hop_length=hop_length),  # spectral_flatness
-        lr.feature.mfcc(y=audio_data, sr=sample_rate, hop_length=hop_length, n_mfcc=13),  # mfcc
-        lr.feature.chroma_stft(y=audio_data, sr=sample_rate, hop_length=hop_length, n_chroma=12),  # chroma_stft
+        lr.feature.spectral_centroid(y=audio_data, sr=sample_rate, n_fft=n_fft, hop_length=n_fft//4),  # spectral_centroid
+        lr.feature.spectral_bandwidth(y=audio_data, sr=sample_rate, n_fft=n_fft, hop_length=n_fft//4),  # spectral_bandwidth
+        lr.feature.spectral_rolloff(y=audio_data, sr=sample_rate, n_fft=n_fft, hop_length=n_fft//4),  # spectral_rolloff
+        lr.feature.spectral_flatness(y=audio_data, n_fft=n_fft, hop_length=n_fft//4),  # spectral_flatness
+        lr.feature.mfcc(y=audio_data, sr=sample_rate, n_fft=n_fft, hop_length=n_fft//4, n_mfcc=13),  # mfcc
+        lr.feature.chroma_stft(y=audio_data, sr=sample_rate, n_fft=n_fft, hop_length=n_fft//4, n_chroma=12),  # chroma_stft
         lr.feature.tonnetz(y=lr.effects.harmonic(audio_data), sr=sample_rate),  # tonnetz
     ]
 
