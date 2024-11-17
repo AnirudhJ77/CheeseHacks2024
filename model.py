@@ -7,24 +7,25 @@ import librosa as lr
 from pathlib import Path
 
 def extract_features(audio_path):
-    audio_data, sample_rate = lr.load(audio_path, sr=None)
+    audio_data, sample_rate = lr.load(audio_path, sr=16000)  # Resample to 16 kHz
 
     # Define frame duration (in seconds) and calculate frame_length and hop_length
     frame_duration_sec = 0.05  # 50ms frame duration
     frame_length = int(frame_duration_sec * sample_rate)
     hop_length = int(frame_length * 0.5)  # 50% overlap
 
-    # Extract features with lr
+    # Extract features with lr, ensuring fmax is within Nyquist frequency
+    fmax = sample_rate / 2
     features = [
-        lr.feature.zero_crossing_rate(y=audio_data, frame_length=frame_length, hop_length=hop_length), #zero_crossing_rate
-        lr.feature.rms(y=audio_data, frame_length=frame_length, hop_length=hop_length), #rms
-        lr.feature.spectral_centroid(y=audio_data, sr=sample_rate, hop_length=hop_length), #spectral_centroid
-        lr.feature.spectral_bandwidth(y=audio_data, sr=sample_rate, hop_length=hop_length), #spectral_bandwidth
-        lr.feature.spectral_rolloff(y=audio_data, sr=sample_rate, hop_length=hop_length),#spectral_rolloff
-        lr.feature.spectral_flatness(y=audio_data, hop_length=hop_length), #spectral_flatness
-        lr.feature.mfcc(y=audio_data, sr=sample_rate, hop_length=hop_length, n_mfcc=13),#mfcc
-        lr.feature.chroma_stft(y=audio_data, sr=sample_rate, hop_length=hop_length),#chroma_stft
-        lr.feature.tonnetz(y=lr.effects.harmonic(audio_data), sr=sample_rate)#tonnetz
+        lr.feature.zero_crossing_rate(y=audio_data, frame_length=frame_length, hop_length=hop_length),  # zero_crossing_rate
+        lr.feature.rms(y=audio_data, frame_length=frame_length, hop_length=hop_length),  # rms
+        lr.feature.spectral_centroid(y=audio_data, sr=sample_rate, hop_length=hop_length),  # spectral_centroid
+        lr.feature.spectral_bandwidth(y=audio_data, sr=sample_rate, hop_length=hop_length),  # spectral_bandwidth
+        lr.feature.spectral_rolloff(y=audio_data, sr=sample_rate, hop_length=hop_length),  # spectral_rolloff
+        lr.feature.spectral_flatness(y=audio_data, hop_length=hop_length),  # spectral_flatness
+        lr.feature.mfcc(y=audio_data, sr=sample_rate, hop_length=hop_length, n_mfcc=13),  # mfcc
+        lr.feature.chroma_stft(y=audio_data, sr=sample_rate, hop_length=hop_length, n_chroma=12),  # chroma_stft
+        lr.feature.tonnetz(y=lr.effects.harmonic(audio_data), sr=sample_rate),  # tonnetz
     ]
 
     # Calculate the mean value for each feature across time (over all frames)
@@ -71,7 +72,7 @@ def get_y(filename, type='emotion'):
         elif y=='I':
             return np.array([0, 0, 1])
     return None
-
+print(extract_features('meow.wav'))
 data_folder = Path("dataset/")
 nrows = 440
 ncols = 37
