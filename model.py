@@ -5,6 +5,9 @@ import tensorflow as tf
 from tensorflow.keras import layers, models # type: ignore
 import librosa as lr
 from pathlib import Path
+import matplotlib.pyplot as plt
+from tensorflow.keras.models import load_model
+
 
 def extract_features(audio_path):
     audio_data, sample_rate = lr.load(audio_path, sr=16000)  # Resample to 16 kHz
@@ -44,13 +47,13 @@ def extract_features(audio_path):
     return final_features
 
 def normalize_features(data):
-    range_features = np.max(a=data, axis=1) - np.min(a=data, axis=1)
+    range_features = np.max(data, axis=0) - np.min(data, axis=0)
     norm_data = data/range_features
     return norm_data
 
 def standardize_features(data):
-    mean_features = np.mean(a=data, axis=1)
-    std_features = np.std(a=data, axis=1)
+    mean_features = np.mean(a=data, axis=0)
+    std_features = np.std(a=data, axis=0)
     std_data = (data-mean_features)/std_features
     return std_data
 
@@ -72,7 +75,6 @@ def get_y(filename, type='emotion'):
         elif y=='I':
             return np.array([0, 0, 1])
     return None
-print(extract_features('meow.wav'))
 data_folder = Path("dataset/")
 nrows = 440
 ncols = 37
@@ -107,23 +109,45 @@ def load_data(type='emotion'):
     return data, labels
 
 num_emotions = 3
-load_data()
-# model = models.Sequential([
-#     layers.Input(shape=(X_train.shape[1],)),  # Input: num_features
-#     layers.BatchNormalization(),
-#     layers.Dense(128, activation='relu'),
-#     layers.BatchNormalization(),
-#     layers.Dropout(0.3),
-#     layers.Dense(64, activation='relu', kernel_regularizer='l2'),
-#     layers.Dropout(0.2),
-#     layers.Dense(num_emotions, activation='softmax')  # Output: num_emotions
-# ])
 
-# model.compile(optimizer='adam',
-#               loss='categorical_crossentropy',
-#               metrics=['accuracy'])
+x = pd.read_csv("data.csv").to_numpy()
+y = pd.read_csv('labels.csv').to_numpy()
 
-# model.summary()
+x_norm = normalize_features(x)
 
-# def predict(audio):
-#     pass
+model = models.Sequential([
+    layers.Input(shape=(x_norm.shape[1],)),  # Input: num_features
+    layers.BatchNormalization(),
+    layers.Dense(128, activation='relu'),
+    layers.BatchNormalization(),
+    layers.Dropout(0.3),
+    layers.Dense(64, activation='relu', kernel_regularizer='l2'),
+    layers.Dropout(0.2),
+    layers.Dense(num_emotions, activation='softmax')  # Output: num_emotions
+])
+
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+history = model.fit(x_norm, y, epochs=44, batch_size=32, validation_split=0.2)
+
+model.summary()
+
+model.save('cat_emotion_model_first_try.keras')
+
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.show()
+
+def predict(audio):
+    new_X = extract_features(audio)
+    model = load_model('cat_emotion_model_first_try.keras')
+    predictions = model.predict(new_X)  # new_X: feature array of a new sample
+    predicted_class = predictions.argmax(axis=-1)
+    idx = np.argmax(predicted_class)
+    return emotion_classes[idx]
+print(predict('meow.wav'))
