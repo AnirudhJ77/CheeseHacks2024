@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from tensorflow.keras import layers, models
 import librosa as lr
@@ -48,7 +49,17 @@ print(extract_features("meow.wav"))
 
 def normalize_features(data):
     """
-    Takes in a dataset and normalizes each feature.
+    Takes in a dataset and normalizes each feature to be between 0 and 1.
+    x_norm = x/(max(x)-min(x))
+    Parameters:
+    data (np.array) : Dataset of Features
+    Returns:
+    (np.array) : Dataset of normalized features
+    """
+def standardize_features(data):
+    """
+    Takes in a dataset and normalizes each feature to have mean 0 and variance 1
+    x_norm = (x-mean(x))/sd(x)
     Parameters:
     data (np.array) : Dataset of Features
     Returns:
@@ -62,3 +73,20 @@ def test_train_split(data):
     """
     Splits the data into test and train data
     """
+
+model = models.Sequential([
+    layers.Input(shape=(X_train.shape[1],)),  # Input: num_features
+    layers.BatchNormalization(),
+    layers.Dense(128, activation='relu'),
+    layers.BatchNormalization(),
+    layers.Dropout(0.3),
+    layers.Dense(64, activation='relu', kernel_regularizer='l2'),
+    layers.Dropout(0.2),
+    layers.Dense(num_classes, activation='softmax')  # Output: num_classes
+])
+
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+model.summary()
