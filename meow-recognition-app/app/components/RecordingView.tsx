@@ -10,6 +10,7 @@ export default function RecordingView() {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
+    const [file, setFile] = useState<Blob | null>(null);
 
     //#region Audio Recording Logic
     // Convert Float32Array to Int16Array
@@ -42,7 +43,7 @@ export default function RecordingView() {
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
         // Extract PCM data from the audio buffer
-        const sampleRate = 28000; // Desired sample rate (adjust as needed)
+        const sampleRate = 48000; // Desired sample rate (adjust as needed)
         const channelData = audioBuffer.getChannelData(0); // Get data from the first channel
         const pcmData = downsampleBuffer(channelData, audioBuffer.sampleRate, sampleRate);
 
@@ -71,6 +72,28 @@ export default function RecordingView() {
                 const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
                 const wavBuffer = await processToWav(blob);
                 const wavBlob = new Blob([wavBuffer], { type: "audio/wav" });
+
+                // Send the file to Flask backend
+                const formData = new FormData();
+                formData.append("wavFile", wavBlob, "audio.wav");
+
+                try {
+                    const response = await fetch("http://34.68.139.216:5000/", {
+                        method: "POST",
+                        body: formData,
+                    });
+                    console.log(response.body);
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log("Analysis result:", result);
+                        setDescription(result.analysis); // Update your UI with Flask response
+                    } else {
+                        console.error("Failed to upload WAV file");
+                    }
+                } catch (error) {
+                    console.error("Error uploading WAV file:", error);
+                }
+
                 const url = URL.createObjectURL(wavBlob);
                 setAudioUrl(url);
                 setRecordingComplete(true);
@@ -99,11 +122,6 @@ export default function RecordingView() {
     }
 
     //#endregion
-
-    //#region Flask
-    useEffect(() => {
-
-    })
 
     return (
         <div className="flex items-center justify-center h-screen w-full">
@@ -161,10 +179,10 @@ export default function RecordingView() {
                     )}
                 </div>
                 <div className="flex items-center justify-center">
-                        <p className="bg-amber-600 bg-opacity-20 w-full md:w-[800px] h-32 p-4 text-balance text-center text-s font-mono font-bold text-amber-800 opacity-60">
-                            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-                            incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
-                        </p>
+                    <p className="bg-amber-600 bg-opacity-20 w-full md:w-[800px] h-32 p-4 text-balance text-center text-s font-mono font-bold text-amber-800 opacity-60">
+                        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+                        incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+                    </p>
                 </div>
             </div>
         </div>
