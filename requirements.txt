@@ -4,3 +4,5 @@ tensorflow
 scikit-learn
 librosa
 pathlib
+flask
+werkzeug

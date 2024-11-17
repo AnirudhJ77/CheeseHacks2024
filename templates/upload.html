@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record and Upload Audio</title>
+    <style>
+        /* General Styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 90%;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #555;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 10px 0;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        input[type="file"] {
+            margin-bottom: 10px;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .message {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .error {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ShaMeow!</h1>
+
+        <!-- Audio Recording Section -->
+        <div class="section">
+            <h2>Record Audio</h2>
+            <button id="toggle-record-btn">Start Recording</button>
+            <audio id="audio-preview" controls></audio>
+            <br>
+            <button id="upload-record-btn" disabled>Upload Recording</button>
+        </div>
+
+        <!-- External File Upload Section -->
+        <div class="section">
+            <h2>Upload an External File</h2>
+            <input type="file" id="file-input" accept=".wav,.mp3,.m4a,.ogg">
+            <button id="upload-file-btn">Upload File</button>
+        </div>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;  // Track recording state
+        const toggleRecordBtn = document.getElementById("toggle-record-btn");
+        const audioPreview = document.getElementById("audio-preview");
+        const uploadRecordBtn = document.getElementById("upload-record-btn");
+        const fileInput = document.getElementById("file-input");
+        const uploadFileBtn = document.getElementById("upload-file-btn");
+        const messageDiv = document.getElementById("message");
+
+        // Display a message
+        const showMessage = (msg, isError = false) => {
+            messageDiv.textContent = msg;
+            messageDiv.className = isError ? "message error" : "message";
+            setTimeout(() => messageDiv.textContent = "", 3000); // Clear after 3 seconds
+        };
+
+        // Toggle recording state
+        toggleRecordBtn.addEventListener("click", async () => {
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+                        const audioURL = URL.createObjectURL(audioBlob);
+                        audioPreview.src = audioURL;
+                        audioPreview.load();
+                        uploadRecordBtn.audioBlob = audioBlob; // Attach audioBlob to the button
+                        uploadRecordBtn.disabled = false;
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    toggleRecordBtn.textContent = "Stop Recording";
+                } catch (error) {
+                    showMessage("Error accessing microphone. Please check permissions.", true);
+                }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                toggleRecordBtn.textContent = "Start Recording";
+            }
+        });
+
+        // Upload the recorded audio
+        uploadRecordBtn.addEventListener("click", async () => {
+            const formData = new FormData();
+            formData.append("audio_data", uploadRecordBtn.audioBlob, "recording.wav");
+
+            const response = await fetch("/", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                showMessage(result.message);
+                uploadRecordBtn.disabled = true;
+                audioPreview.src = "";
+            } else {
+                showMessage("Failed to upload the recording.", true);
+            }
+        });
+
+        // Upload an external file
+        uploadFileBtn.addEventListener("click", async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                showMessage("Please select a file to upload.", true);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await fetch("/", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                showMessage(result.message);
+                fileInput.value = "";
+            } else {
+                showMessage("Failed to upload the file.", true);
+            }
+        });
+    </script>
+</body>
+</html>
