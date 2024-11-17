@@ -84,7 +84,7 @@ def load_data(type='emotion'):
             continue
         try:
             # Extract features and label
-            features = extract_features(str(file))
+            features = extract_features(file)
             label = get_y(file.name, type)
             # Append to lists
             x.append(features)
